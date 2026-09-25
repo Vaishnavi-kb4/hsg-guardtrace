@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "H2S Guard & Dosimeter System",
+    "slug": "h2s-guard-trace",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "web": {
+      "bundler": "metro"
+    },
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "plugins": [
+      "expo-status-bar"
+    ]
+  }
+}
