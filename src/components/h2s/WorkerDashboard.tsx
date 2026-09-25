@@ -564,28 +564,28 @@ export function WorkerDashboard() {
   return (
     <div className="space-y-6">
       {/* Top Banner for Worker */}
-      <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 p-6 text-white shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <span className="grid size-14 place-items-center rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-400/30">
-              <HardHat className="size-8" />
+      <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 p-4 sm:p-6 text-white shadow-xl overflow-hidden">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <span className="grid size-11 sm:size-14 shrink-0 place-items-center rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-400/30">
+              <HardHat className="size-6 sm:size-8" />
             </span>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-extrabold uppercase text-blue-300 tracking-wider">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] sm:text-xs font-extrabold uppercase text-blue-300 tracking-wider">
                   Worker Personal Interface
                 </span>
-                <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold text-emerald-300">
+                <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-emerald-300">
                   ✓ Active Shift
                 </span>
               </div>
-              <h1 className="text-2xl font-black text-white mt-1">{workerName}</h1>
-              <div className="flex items-center gap-3 text-xs text-slate-300 font-mono mt-1">
-                <span>Worker ID: {workerId}</span>
+              <h1 className="text-xl sm:text-2xl font-black text-white mt-0.5 sm:mt-1">{workerName}</h1>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-slate-300 font-mono mt-1">
+                <span>ID: {workerId}</span>
                 <span>•</span>
-                <span>Shift: {shift}</span>
+                <span>{shift}</span>
                 <span>•</span>
-                <span>Assigned Badge: {badgeId}</span>
+                <span>Badge: {badgeId}</span>
               </div>
             </div>
           </div>
