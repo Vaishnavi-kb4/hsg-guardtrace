@@ -10,6 +10,8 @@ import type { Worker } from "@/types/h2s";
 
 import { evaluateBadgeShelfLife } from "@/lib/badgeUtils";
 
+import { RegisterWorkerWizard } from "@/components/h2s/RegisterWorkerWizard";
+
 export const Route = createFileRoute("/workers")({
   head: () => ({
     meta: [
@@ -21,31 +23,76 @@ export const Route = createFileRoute("/workers")({
 });
 
 function WorkersPage() {
-  const { workers, measurements, badges } = useApp();
+  const { workers, registeredUsers, measurements, badges } = useApp();
   const [selected, setSelected] = useState<Worker | null>(null);
+  const [regWizardOpen, setRegWizardOpen] = useState(false);
+
+  // Combine registered worker accounts with workers array
+  const allWorkers: Worker[] = Array.from(
+    new Map(
+      [
+        ...registeredUsers
+          .filter((u) => u.role === "worker")
+          .map((u) => {
+            const userMeas = measurements.filter((m) => m.workerId === u.id);
+            const latest = userMeas.length > 0 ? userMeas[0] : null;
+            return {
+              id: u.id,
+              name: u.name,
+              shift: u.shift,
+              badgeId: u.badgeId,
+              latestExposure: latest?.exposure ?? 0,
+              lastMeasurement: latest?.time || "Registered worker",
+              status: "Active" as const,
+            };
+          }),
+        ...workers,
+      ].map((w) => [w.id, w])
+    ).values()
+  );
 
   // Dynamic counts
-  const highRiskCount = workers.filter((w) => (w.latestExposure ?? 0) > 20.0).length;
-  const measuredCount = workers.filter((w) => (w.latestExposure ?? 0) > 0).length;
-  const zeroExposureCount = workers.filter((w) => (w.latestExposure ?? 0) === 0).length;
+  const highRiskCount = allWorkers.filter((w) => (w.latestExposure ?? 0) > 20.0).length;
+  const measuredCount = allWorkers.filter((w) => (w.latestExposure ?? 0) > 0).length;
+  const zeroExposureCount = allWorkers.filter((w) => (w.latestExposure ?? 0) === 0).length;
 
   return (
     <>
       <PageHeader
         title="Worker Exposure Roster"
         subtitle="Assigned wristband badges, live cumulative exposure levels, and workplace threshold status."
+        action={
+          <Button
+            size="sm"
+            onClick={() => setRegWizardOpen(true)}
+            className="gap-1.5 font-bold text-xs bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl shadow-xs"
+          >
+            <HardHat className="size-4" />
+            <span>+ Register New Worker</span>
+          </Button>
+        }
       />
+      <RegisterWorkerWizard open={regWizardOpen} onOpenChange={setRegWizardOpen} />
 
       <div className="mb-5 grid gap-3 sm:grid-cols-3">
-        <MetricCard label="Active Roster Monitored" value={workers.length} detail="Assigned field workers" icon={UserRound} />
-        <MetricCard label="Measured Exposure Records" value={measuredCount} detail={`${workers.length ? Math.round((measuredCount / workers.length) * 100) : 0}% roster coverage`} icon={Activity} tone="success" />
+        <MetricCard label="Active Roster Monitored" value={allWorkers.length} detail="Assigned field workers" icon={UserRound} />
+        <MetricCard label="Measured Exposure Records" value={measuredCount} detail={`${allWorkers.length ? Math.round((measuredCount / allWorkers.length) * 100) : 0}% roster coverage`} icon={Activity} tone="success" />
         <MetricCard label="High / Moderate Risk Alerts" value={highRiskCount} detail={highRiskCount > 0 ? "Action required by safety officer" : "Zero high risk workers"} icon={ShieldAlert} tone={highRiskCount > 0 ? "danger" : "primary"} />
       </div>
 
       <Panel>
         <PanelHeader
           title="Worker Roster & Dosimetry Exposure Status"
-          subtitle={`${workers.length} registered workers monitored`}
+          subtitle={`${allWorkers.length} registered workers monitored`}
+          action={
+            <Button
+              size="sm"
+              onClick={() => setRegWizardOpen(true)}
+              className="gap-1 font-bold text-xs bg-emerald-700 hover:bg-emerald-600 text-white"
+            >
+              + Register New Worker
+            </Button>
+          }
         />
 
         <div className="overflow-x-auto">
@@ -60,7 +107,7 @@ function WorkersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {workers.length === 0 ? (
+              {allWorkers.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="p-8 text-center text-muted-foreground text-xs">
                     <HardHat className="mx-auto size-8 text-slate-400 mb-2" />
@@ -68,7 +115,7 @@ function WorkersPage() {
                   </td>
                 </tr>
               ) : (
-                workers.map((w) => {
+                allWorkers.map((w) => {
                   const expVal = w.latestExposure ?? 0;
                   const statusToDisplay =
                     expVal > 20.0

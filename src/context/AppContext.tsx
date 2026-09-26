@@ -16,31 +16,12 @@ import { mockMeasurementService } from "@/services/mockServices";
 import type { BadgeRecord, Measurement, NotificationItem, ReviewAlert, UserAccount, Worker, ActiveViewMode } from "@/types/h2s";
 
 import type { SupportedLanguage } from "@/lib/translations";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { saveUserToDB, getUsersFromDB } from "@/lib/db";
+import { getNextIterativeBadgeId, getNextIterativeBatchId } from "@/lib/badgeUtils";
 
-const DEFAULT_USERS: UserAccount[] = [
-  {
-    id: "W-102",
-    name: "Arun Kumar",
-    email: "arun.kumar@plant.com",
-    password: "123",
-    role: "worker",
-    shift: "Morning Shift",
-    badgeId: "B-00125",
-    batchId: "BATCH-07",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "HSE-901",
-    name: "Senior HSE Officer",
-    email: "hse.officer@plant.com",
-    password: "123",
-    role: "monitor",
-    shift: "All Shifts",
-    badgeId: "B-00000",
-    batchId: "BATCH-00",
-    createdAt: new Date().toISOString(),
-  },
-];
+
+const DEFAULT_USERS: UserAccount[] = [];
 
 export interface AuthResult {
   success: boolean;
@@ -92,31 +73,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [online, setOnlineState] = useState(true);
   const [pending, setPending] = useState(0);
   const [dark, setDarkState] = useState(false);
-  const [demoMode, setDemoModeState] = useState(true);
+  const [demoMode, setDemoModeState] = useState(false);
   const [activeViewMode, setActiveViewModeState] = useState<ActiveViewMode>("dashboard");
   const [language, setLanguageState] = useState<SupportedLanguage>("English");
 
-  // User Authentication state
-  const [registeredUsers, setRegisteredUsers] = useState<UserAccount[]>(DEFAULT_USERS);
+  // User Authentication state (Clean start, 0 demo users)
+  const [registeredUsers, setRegisteredUsers] = useState<UserAccount[]>([]);
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
 
-  // Dynamic Data Arrays (default initialized with sample roster & data)
-  const [workers, setWorkers] = useState<Worker[]>(sampleWorkers);
-  const [badges, setBadges] = useState<BadgeRecord[]>(sampleBadges);
-  const [measurements, setMeasurements] = useState<Measurement[]>(sampleMeasurements);
-  const [alerts, setAlerts] = useState<ReviewAlert[]>(sampleAlerts);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(sampleNotifications);
+  // Dynamic Data Arrays (Clean start, 0 demo records)
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [badges, setBadges] = useState<BadgeRecord[]>([]);
+  const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  const [alerts, setAlerts] = useState<ReviewAlert[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   useEffect(() => {
     try {
       setOnlineState(localStorage.getItem("h2s.online") !== "false");
       setPending(Number(localStorage.getItem("h2s.pending") ?? 0));
       setDarkState(localStorage.getItem("h2s.dark") === "true");
-      setDemoModeState(localStorage.getItem("h2s.demo") !== "false");
+      setDemoModeState(false);
       const savedLang = localStorage.getItem("h2s.language") as SupportedLanguage;
       if (savedLang) setLanguageState(savedLang);
 
-      // Load registered users from localStorage
+      // Load registered users from IndexedDB database & localStorage
+      getUsersFromDB().then((idbUsers) => {
+        if (idbUsers.length > 0) {
+          setRegisteredUsers((prev) => {
+            const merged = [...idbUsers, ...prev.filter((p) => !idbUsers.some((i) => i.id === p.id))];
+            localStorage.setItem("h2s.users", JSON.stringify(merged));
+            return merged;
+          });
+        }
+      });
+
       const savedUsersStr = localStorage.getItem("h2s.users");
       let loadedUsers: UserAccount[] = [];
       if (savedUsersStr) {
@@ -127,23 +118,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      const activeUsersList = loadedUsers.length > 0 ? loadedUsers : DEFAULT_USERS;
-      setRegisteredUsers(activeUsersList);
-      if (!savedUsersStr) {
-        localStorage.setItem("h2s.users", JSON.stringify(DEFAULT_USERS));
-      }
+      setRegisteredUsers(loadedUsers);
 
-      // Sync matching workers & badges for registered users
-      const userWorkers: Worker[] = activeUsersList.map((u) => ({
-        id: u.id,
-        name: u.name,
-        shift: u.shift,
-        badgeId: u.badgeId,
-        latestExposure: 0,
-        lastMeasurement: "Registered user",
-        status: "Active",
-      }));
-      setWorkers((prev) => [...userWorkers, ...prev.filter((w) => !userWorkers.some((uw) => uw.id === w.id))]);
+      // Sync matching workers & badges for registered worker users
+      const savedWorkers = JSON.parse(localStorage.getItem("h2s.workers") || "[]") as Worker[];
+      const userWorkers: Worker[] = loadedUsers
+        .filter((u) => u.role === "worker")
+        .map((u) => ({
+          id: u.id,
+          name: u.name,
+          shift: u.shift,
+          badgeId: u.badgeId,
+          latestExposure: 0,
+          lastMeasurement: "Registered worker",
+          status: "Active" as const,
+        }));
+
+      const mergedWorkers = Array.from(
+        new Map([...userWorkers, ...savedWorkers].map((w) => [w.id, w])).values()
+      );
+      setWorkers(mergedWorkers);
+
+      const savedBadges = JSON.parse(localStorage.getItem("h2s.badges") || "[]") as BadgeRecord[];
+      const userBadges: BadgeRecord[] = loadedUsers
+        .filter((u) => u.role === "worker" && u.badgeId)
+        .map((u) => ({
+          id: u.badgeId,
+          batch: u.batchId || "BATCH-07",
+          workerId: u.id,
+          manufactured: "20-Sep-2026",
+          expiry: "20-Dec-2026",
+          calibration: "CAL-03",
+          status: "VALID" as const,
+          measurements: 0,
+        }));
+      const mergedBadges = Array.from(
+        new Map([...userBadges, ...savedBadges].map((b) => [b.id, b])).values()
+      );
+      setBadges(mergedBadges);
 
       // Load saved current user
       const savedCurrUserStr = localStorage.getItem("h2s.currentUser");
@@ -244,21 +256,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return { success: false, message: msg };
     }
 
-    // Generate guaranteed UNIQUE Badge ID & Batch ID
+    // Generate guaranteed UNIQUE Iterative Badge ID & Batch ID
     let uniqueBadgeId = newUser.badgeId?.trim();
     if (!uniqueBadgeId || badges.some((b) => b.id === uniqueBadgeId) || registeredUsers.some((u) => u.badgeId === uniqueBadgeId)) {
-      do {
-        const num = Math.floor(10000 + Math.random() * 90000);
-        uniqueBadgeId = `B-${num}`;
-      } while (badges.some((b) => b.id === uniqueBadgeId) || registeredUsers.some((u) => u.badgeId === uniqueBadgeId));
+      uniqueBadgeId = getNextIterativeBadgeId(badges, registeredUsers);
     }
 
     let uniqueBatchId = newUser.batchId?.trim();
     if (!uniqueBatchId || registeredUsers.some((u) => u.batchId === uniqueBatchId) || badges.some((b) => b.batch === uniqueBatchId)) {
-      do {
-        const num = Math.floor(10 + Math.random() * 90);
-        uniqueBatchId = `BATCH-${num}`;
-      } while (registeredUsers.some((u) => u.batchId === uniqueBatchId) || badges.some((b) => b.batch === uniqueBatchId));
+      uniqueBatchId = getNextIterativeBatchId(badges, registeredUsers);
     }
 
     const finalUser: UserAccount = {
@@ -277,29 +283,67 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("h2s.users", JSON.stringify(updatedUsers));
     localStorage.setItem("h2s.currentUser", JSON.stringify(finalUser));
 
-    // Automatically register matching worker & badge records
-    const newWorker: Worker = {
-      id: finalUser.id,
-      name: finalUser.name,
-      shift: finalUser.shift,
-      badgeId: finalUser.badgeId,
-      latestExposure: 0,
-      lastMeasurement: "Just registered",
-      status: "Active",
-    };
-    setWorkers((prev) => [newWorker, ...prev.filter((w) => w.id !== newWorker.id)]);
+    // Save to IndexedDB database
+    saveUserToDB(finalUser);
 
-    const newBadge: BadgeRecord = {
-      id: finalUser.badgeId,
-      batch: finalUser.batchId,
-      workerId: finalUser.id,
-      manufactured: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-      expiry: "12 Jan 2027",
-      calibration: "CAL-03",
-      status: "VALID",
-      measurements: 0,
-    };
-    setBadges((prev) => [newBadge, ...prev.filter((b) => b.id !== newBadge.id)]);
+
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from("users")
+        .upsert([
+          {
+            id: finalUser.id,
+            name: finalUser.name,
+            email: finalUser.email,
+            password: finalUser.password,
+            role: finalUser.role,
+            shift: finalUser.shift,
+            badge_id: finalUser.badgeId,
+            batch_id: finalUser.batchId,
+            created_at: finalUser.createdAt || new Date().toISOString(),
+          },
+        ])
+        .then(({ error }) => {
+          if (error) {
+            console.error("Failed to sync registered user to Supabase PostgreSQL:", error);
+          }
+        });
+    }
+
+
+    // Automatically register matching worker & badge records
+    if (finalUser.role === "worker") {
+      const newWorker: Worker = {
+        id: finalUser.id,
+        name: finalUser.name,
+        shift: finalUser.shift,
+        badgeId: finalUser.badgeId,
+        latestExposure: 0,
+        lastMeasurement: "Just registered",
+        status: "Active",
+      };
+      setWorkers((prev) => {
+        const next = [newWorker, ...prev.filter((w) => w.id !== newWorker.id)];
+        localStorage.setItem("h2s.workers", JSON.stringify(next));
+        return next;
+      });
+
+      const newBadge: BadgeRecord = {
+        id: finalUser.badgeId,
+        batch: finalUser.batchId,
+        workerId: finalUser.id,
+        manufactured: "20-Sep-2026",
+        expiry: "20-Dec-2026",
+        calibration: "CAL-03",
+        status: "VALID",
+        measurements: 0,
+      };
+      setBadges((prev) => {
+        const next = [newBadge, ...prev.filter((b) => b.id !== newBadge.id)];
+        localStorage.setItem("h2s.badges", JSON.stringify(next));
+        return next;
+      });
+    }
 
     const successMsg = `Account registered successfully! Logged in as ${finalUser.name}`;
     toast.success(successMsg);
@@ -343,6 +387,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCurrentUser(null);
     localStorage.removeItem("h2s.currentUser");
     toast("Logged out of account");
+    if (typeof window !== "undefined") {
+      window.location.href = window.location.origin + "/";
+    }
   };
 
   // Save new measurement dynamically & update alerts/roster
@@ -363,11 +410,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       prev.map((w) =>
         w.id === m.workerId
           ? {
-              ...w,
-              latestExposure: m.exposure ?? w.latestExposure,
-              lastMeasurement: m.time,
-              status: isHighExposure ? "Review" : "Active",
-            }
+            ...w,
+            latestExposure: m.exposure ?? w.latestExposure,
+            lastMeasurement: m.time,
+            status: isHighExposure ? "Review" : "Active",
+          }
           : w
       )
     );
@@ -378,8 +425,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const alertTitle = isHighExposure
         ? `🚨 HIGH H₂S EXPOSURE HAZARD (${(m.exposure ?? 0).toFixed(1)} ppm·h)`
         : isModerateExposure
-        ? `⚠ MODERATE H₂S EXPOSURE (${(m.exposure ?? 0).toFixed(1)} ppm·h)`
-        : "Measurement Review Required";
+          ? `⚠ MODERATE H₂S EXPOSURE (${(m.exposure ?? 0).toFixed(1)} ppm·h)`
+          : "Measurement Review Required";
 
       const newAlert: ReviewAlert = {
         id: `ALT-${Math.floor(100 + Math.random() * 900)}`,
@@ -389,8 +436,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         reason: isHighExposure
           ? `Shift average ${m.twaPpm ? m.twaPpm.toFixed(2) : ((m.exposure || 0) / 8).toFixed(2)} ppm TWA exceeds 2.5 ppm limit. Immediate action required.`
           : isModerateExposure
-          ? `Moderate exposure warning threshold (${m.twaPpm ? m.twaPpm.toFixed(2) : ((m.exposure || 0) / 8).toFixed(2)} ppm TWA). Ensure area ventilation.`
-          : "Image pixel check exception",
+            ? `Moderate exposure warning threshold (${m.twaPpm ? m.twaPpm.toFixed(2) : ((m.exposure || 0) / 8).toFixed(2)} ppm TWA). Ensure area ventilation.`
+            : "Image pixel check exception",
         status: "Open",
       };
 

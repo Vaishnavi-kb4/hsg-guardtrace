@@ -1,52 +1,44 @@
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useApp } from "@/context/AppContext";
-import { UserCheck, UserPlus, LogIn, LogOut, ShieldCheck, HardHat, Sparkles } from "lucide-react";
+import { UserPlus, LogIn, LogOut, ShieldCheck, Building, KeyRound, Mail, User } from "lucide-react";
 import { toast } from "sonner";
-import type { UserRole } from "@/types/h2s";
 
 export function AuthDialog({ open, onOpenChange }: { open?: boolean | undefined; onOpenChange?: ((open: boolean) => void) | undefined }) {
-  const { currentUser, registeredUsers, registerUser, loginUser, logoutUser } = useApp();
+  const { currentUser, registerUser, loginUser, logoutUser } = useApp();
   const [tab, setTab] = useState<"login" | "register">("register");
 
-  const getNewWorkerId = () => `W-${Math.floor(100 + Math.random() * 900)}`;
-  const getNewBadgeId = () => `B-${Math.floor(10000 + Math.random() * 90000)}`;
-  const getNewBatchId = () => `BATCH-${Math.floor(10 + Math.random() * 90)}`;
+  const getNewOfficerId = () => `HSE-${Math.floor(100 + Math.random() * 900)}`;
 
-  // Registration state
+  // Registration state for HSE Safety Monitor
   const [name, setName] = useState("");
-  const [workerId, setWorkerId] = useState(getNewWorkerId);
+  const [officerId, setOfficerId] = useState(getNewOfficerId);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UserRole>("worker");
-  const [shift, setShift] = useState("Morning Shift");
-  const [badgeId, setBadgeId] = useState(getNewBadgeId);
-  const [batchId, setBatchId] = useState(getNewBatchId);
+  const [plantOrg, setPlantOrg] = useState("MRPL SRU Unit 09");
 
   // Login state
   const [loginEmailOrId, setLoginEmailOrId] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
-  // Refresh unique IDs whenever dialog opens
+  // Refresh officer ID when opened
   React.useEffect(() => {
     if (open) {
-      setWorkerId(getNewWorkerId());
-      setBadgeId(getNewBadgeId());
-      setBatchId(getNewBatchId());
+      setOfficerId(getNewOfficerId());
     }
   }, [open]);
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegisterHseOfficer = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       toast.error("Please enter your full name.");
       return;
     }
-    if (!workerId.trim()) {
-      toast.error("Please enter a Worker/Officer ID.");
+    if (!officerId.trim()) {
+      toast.error("Please enter an Officer ID.");
       return;
     }
     if (!email.trim()) {
@@ -64,14 +56,14 @@ export function AuthDialog({ open, onOpenChange }: { open?: boolean | undefined;
     }
 
     const res = registerUser({
-      id: workerId.trim(),
+      id: officerId.trim(),
       name: name.trim(),
       email: email.trim(),
       password: password.trim(),
-      role,
-      shift,
-      badgeId: badgeId.trim(),
-      batchId: batchId.trim(),
+      role: "monitor",
+      shift: "General Shift",
+      badgeId: "B-00000",
+      batchId: "BATCH-00",
       createdAt: new Date().toISOString(),
     });
 
@@ -79,9 +71,7 @@ export function AuthDialog({ open, onOpenChange }: { open?: boolean | undefined;
       setName("");
       setEmail("");
       setPassword("");
-      setWorkerId(getNewWorkerId());
-      setBadgeId(getNewBadgeId());
-      setBatchId(getNewBatchId());
+      setOfficerId(getNewOfficerId());
       if (onOpenChange) onOpenChange(false);
     }
   };
@@ -89,11 +79,11 @@ export function AuthDialog({ open, onOpenChange }: { open?: boolean | undefined;
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmailOrId.trim()) {
-      toast.error("Please enter your Worker ID or Email.");
+      toast.error("Please enter your Officer/Worker ID or Email.");
       return;
     }
     if (!loginPassword.trim()) {
-      toast.error("Please enter your Password / PIN.");
+      toast.error("Please enter your Password.");
       return;
     }
 
@@ -105,14 +95,14 @@ export function AuthDialog({ open, onOpenChange }: { open?: boolean | undefined;
 
   return (
     <Dialog open={open ?? false} onOpenChange={onOpenChange ? (v) => onOpenChange(v) : () => {}}>
-      <DialogContent className="max-w-md p-6">
+      <DialogContent className="max-w-md p-6 rounded-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-            <ShieldCheck className="size-5 text-primary" />
-            H₂S Guard — User Account & Auth
+            <ShieldCheck className="size-5 text-emerald-600" />
+            H₂S Guard — HSE Safety Monitor Portal
           </DialogTitle>
-          <DialogDescription>
-            Register worker details or log in. All user records sync dynamically to the Safety Monitor Dashboard.
+          <DialogDescription className="text-xs">
+            Register new HSE Safety Monitor Officer accounts or log in. (Workers are registered by HSE Officers via the Register New Worker wizard).
           </DialogDescription>
         </DialogHeader>
 
@@ -131,87 +121,66 @@ export function AuthDialog({ open, onOpenChange }: { open?: boolean | undefined;
               <div className="mt-1 text-xs text-muted-foreground font-mono">
                 ID: {currentUser.id} · Email: {currentUser.email}
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs border-t border-border pt-3">
-                <div><span className="text-muted-foreground">Shift:</span> <b className="text-foreground">{currentUser.shift}</b></div>
-                <div><span className="text-muted-foreground">Badge ID:</span> <b className="font-mono text-foreground">{currentUser.badgeId}</b></div>
-                <div><span className="text-muted-foreground">Batch ID:</span> <b className="font-mono text-foreground">{currentUser.batchId}</b></div>
-              </div>
             </div>
 
-            <Button variant="outline" className="w-full text-destructive" onClick={logoutUser}>
+            <Button variant="outline" className="w-full text-destructive font-bold text-xs" onClick={logoutUser}>
               <LogOut className="size-4 mr-2" /> Log Out Account
             </Button>
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1 text-xs font-bold">
+            <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1 text-xs font-bold">
               <button
                 type="button"
                 onClick={() => setTab("register")}
-                className={`rounded-md py-2 transition ${tab === "register" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+                className={`rounded-lg py-2 transition ${tab === "register" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
               >
-                <UserPlus className="inline size-3.5 mr-1" /> Register Account
+                <UserPlus className="inline size-3.5 mr-1" /> Register HSE Officer
               </button>
               <button
                 type="button"
                 onClick={() => setTab("login")}
-                className={`rounded-md py-2 transition ${tab === "login" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+                className={`rounded-lg py-2 transition ${tab === "login" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
               >
-                <LogIn className="inline size-3.5 mr-1" /> Login Details
+                <LogIn className="inline size-3.5 mr-1" /> Log In
               </button>
             </div>
 
             {tab === "register" ? (
-              <form onSubmit={handleRegister} className="space-y-3">
-                <div>
-                  <Label className="text-xs">Account Role</Label>
-                  <div className="mt-1.5 grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setRole("worker")}
-                      className={`flex items-center justify-center gap-2 rounded-lg border p-2 text-xs font-bold ${role === "worker" ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted"}`}
-                    >
-                      <HardHat className="size-4" /> Field Worker
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRole("monitor")}
-                      className={`flex items-center justify-center gap-2 rounded-lg border p-2 text-xs font-bold ${role === "monitor" ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted"}`}
-                    >
-                      <ShieldCheck className="size-4" /> Safety Monitor
-                    </button>
-                  </div>
+              <form onSubmit={handleRegisterHseOfficer} className="space-y-3">
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 dark:border-emerald-900 dark:bg-emerald-950/40 text-xs font-semibold text-emerald-900 dark:text-emerald-200">
+                  🛡️ <b>HSE Safety Monitor Setup:</b> Registering an HSE Officer account with plant monitoring credentials.
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs">Full Name *</Label>
+                    <Label className="text-xs font-bold">Full Name *</Label>
                     <Input
                       required
-                      placeholder="e.g. Arun Kumar"
+                      placeholder="e.g. Rajesh Sharma"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       className="mt-1 h-9 text-xs"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs">Worker / Emp ID *</Label>
+                    <Label className="text-xs font-bold">Officer ID *</Label>
                     <Input
                       required
-                      placeholder="e.g. W-108"
-                      value={workerId}
-                      onChange={(e) => setWorkerId(e.target.value)}
-                      className="mt-1 h-9 text-xs font-mono"
+                      placeholder="e.g. HSE-901"
+                      value={officerId}
+                      onChange={(e) => setOfficerId(e.target.value)}
+                      className="mt-1 h-9 text-xs font-mono font-bold"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label className="text-xs">Email Address *</Label>
+                  <Label className="text-xs font-bold">Official Email *</Label>
                   <Input
                     required
                     type="email"
-                    placeholder="worker@company.com"
+                    placeholder="hse.officer@plant.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="mt-1 h-9 text-xs"
@@ -219,7 +188,7 @@ export function AuthDialog({ open, onOpenChange }: { open?: boolean | undefined;
                 </div>
 
                 <div>
-                  <Label className="text-xs">Password *</Label>
+                  <Label className="text-xs font-bold">Password *</Label>
                   <Input
                     required
                     type="password"
@@ -230,85 +199,37 @@ export function AuthDialog({ open, onOpenChange }: { open?: boolean | undefined;
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <Label className="text-xs">Shift</Label>
-                    <select
-                      value={shift}
-                      onChange={(e) => setShift(e.target.value)}
-                      className="mt-1 h-9 w-full rounded-md border border-border bg-card px-2 text-xs"
-                    >
-                      <option>Morning Shift</option>
-                      <option>General Shift</option>
-                      <option>Evening Shift</option>
-                      <option>Night Shift</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Assigned Badge</Label>
-                    <Input
-                      value={badgeId}
-                      onChange={(e) => setBadgeId(e.target.value)}
-                      className="mt-1 h-9 text-xs font-mono"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Batch ID</Label>
-                    <Input
-                      value={batchId}
-                      onChange={(e) => setBatchId(e.target.value)}
-                      className="mt-1 h-9 text-xs font-mono"
-                    />
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full mt-4">
-                  <UserPlus className="size-4 mr-2" /> Complete User Registration
-                </Button>
-              </form>
-            ) : (
-              <form onSubmit={handleLogin} className="space-y-3">
-                {registeredUsers.length > 0 && (
-                  <div>
-                    <Label className="text-xs">Quick Select Registered User</Label>
-                    <div className="mt-1.5 space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                      {registeredUsers.map((u) => (
-                        <button
-                          key={u.id}
-                          type="button"
-                          onClick={() => {
-                            setLoginEmailOrId(u.id);
-                            const res = loginUser(u.id, u.password || "123");
-                            if (res.success && onOpenChange) onOpenChange(false);
-                          }}
-                          className="w-full flex items-center justify-between rounded-lg border border-border bg-card p-2.5 text-left text-xs hover:border-primary hover:bg-primary/5"
-                        >
-                          <div>
-                            <div className="font-bold">{u.name}</div>
-                            <div className="text-[10px] text-muted-foreground font-mono">{u.id} · {u.shift}</div>
-                          </div>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${u.role === "worker" ? "bg-blue-100 text-blue-800" : "bg-emerald-100 text-emerald-800"}`}>
-                            {u.role === "worker" ? "Worker" : "Monitor"}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 <div>
-                  <Label className="text-xs">Worker ID or Email</Label>
+                  <Label className="text-xs font-bold">Plant / Organization</Label>
                   <Input
-                    placeholder="Enter ID (e.g. W-102) or Email"
-                    value={loginEmailOrId}
-                    onChange={(e) => setLoginEmailOrId(e.target.value)}
+                    placeholder="e.g. MRPL SRU Unit 09"
+                    value={plantOrg}
+                    onChange={(e) => setPlantOrg(e.target.value)}
                     className="mt-1 h-9 text-xs"
                   />
                 </div>
 
+                <Button type="submit" className="w-full mt-4 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs">
+                  <UserPlus className="size-4 mr-2" /> Complete HSE Safety Monitor Setup
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleLogin} className="space-y-3">
                 <div>
-                  <Label className="text-xs">Password / PIN</Label>
+                  <Label className="text-xs font-bold">Email or User ID</Label>
                   <Input
+                    required
+                    placeholder="Enter HSE Officer or Worker ID / Email"
+                    value={loginEmailOrId}
+                    onChange={(e) => setLoginEmailOrId(e.target.value)}
+                    className="mt-1 h-9 text-xs font-mono"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs font-bold">Password / PIN</Label>
+                  <Input
+                    required
                     type="password"
                     placeholder="••••••••"
                     value={loginPassword}
@@ -317,7 +238,7 @@ export function AuthDialog({ open, onOpenChange }: { open?: boolean | undefined;
                   />
                 </div>
 
-                <Button type="submit" className="w-full mt-4">
+                <Button type="submit" className="w-full mt-4 font-bold text-xs">
                   <LogIn className="size-4 mr-2" /> Log In Account
                 </Button>
               </form>

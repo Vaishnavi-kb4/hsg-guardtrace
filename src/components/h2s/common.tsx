@@ -1,9 +1,39 @@
-import { AlertTriangle, Check, CircleDot, Clock3, CloudOff, LoaderCircle, ShieldCheck, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, CircleDot, Clock3, CloudOff, LoaderCircle, ShieldCheck, X } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 import type { SafetyStatus } from "@/types/h2s";
-export function PageHeader({title,subtitle,actions}:{title:string;subtitle:string;actions?:ReactNode}){return <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><div className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase text-primary"><span className="h-px w-5 bg-primary"/>H₂S Guard / Demo Environment</div><h1 className="font-display text-2xl font-bold text-foreground sm:text-3xl">{title}</h1><p className="mt-1 text-sm text-muted-foreground">{subtitle}</p></div>{actions}</div>}
+import { Link, useRouterState } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+
+export function PageHeader({ title, subtitle, action, actions }: { title: string; subtitle: string; action?: ReactNode; actions?: ReactNode }) {
+  const path = useRouterState({ select: (s) => s.location.pathname });
+  const isHome = path === "/";
+
+  return (
+    <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+      <div>
+        <div className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase text-primary">
+          {!isHome && (
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline mr-1"
+            >
+              <ArrowLeft className="size-3.5" /> Back
+            </button>
+          )}
+          {!isHome && <span className="text-muted-foreground">•</span>}
+          <span className="h-px w-5 bg-primary" />
+          H₂S Guard / Occupational Safety System
+        </div>
+        <h1 className="font-display text-2xl font-bold text-foreground sm:text-3xl">{title}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+      </div>
+      {action || actions}
+    </div>
+  );
+}
 export function Panel({children,className}:{children:ReactNode;className?:string}){return <section className={cn("rounded-xl border border-border bg-card shadow-panel",className)}>{children}</section>}
 export function PanelHeader({title,subtitle,action}:{title:string;subtitle?:string;action?:ReactNode}){return <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-4"><div><h2 className="font-display text-base font-bold text-foreground">{title}</h2>{subtitle&&<p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}</div>{action}</div>}
 const statusStyles:Record<string,string>={VALID:"border-success/30 bg-success-soft text-success","ACTIVE":"border-success/30 bg-success-soft text-success",LOW:"border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold",MODERATE:"border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold",HIGH:"border-red-600/40 bg-red-600/15 text-red-600 dark:text-red-400 font-extrabold animate-pulse",INVALID:"border-destructive/30 bg-destructive-soft text-destructive","REVIEW REQUIRED":"border-warning/30 bg-warning-soft text-warning-foreground",EXPIRED:"border-destructive/30 bg-destructive-soft text-destructive",PROCESSING:"border-primary/30 bg-primary-soft text-primary",OFFLINE:"border-muted-foreground/30 bg-muted text-muted-foreground",SYNCED:"border-success/30 bg-success-soft text-success","EXPIRING SOON":"border-warning/30 bg-warning-soft text-warning-foreground"};

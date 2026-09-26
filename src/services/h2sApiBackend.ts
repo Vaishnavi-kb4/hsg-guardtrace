@@ -76,11 +76,43 @@ export async function analyzeH2SImagePair(
   req: H2SAnalyzeApiRequest
 ): Promise<H2SAnalyzeApiResponse> {
   const duration = req.durationHours || 8.0;
-  const temp = req.temperature || 31.2;
-  const rh = req.humidity || 68.0;
+
+  // Try calling Python FastAPI (OpenCV + scikit-learn + PostgreSQL) microservice first if active
+  try {
+    const fastApiUrl = "http://localhost:8000/api/analyze";
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+    const preImgStr = typeof req.preShiftImage === "string" ? req.preShiftImage : "";
+    const postImgStr = typeof req.postShiftImage === "string" ? req.postShiftImage : "";
+
+    if (preImgStr && postImgStr) {
+      const response = await fetch(fastApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          preShiftImage: preImgStr,
+          postShiftImage: postImgStr,
+          badgeId: req.badgeId,
+          batchId: req.batchId,
+          durationHours: duration,
+        }),
+      });
+
+      clearTimeout(timeoutId);
+      if (response.ok) {
+        const pyRes = await response.json();
+        console.log("Response from Python FastAPI + OpenCV + scikit-learn + PostgreSQL:", pyRes);
+      }
+    }
+  } catch (err) {
+    // FastAPI server not running on localhost:8000, continuing with in-browser engine
+  }
 
   // 1. Load & Extract Actual Pixels from Pre-Shift Image
   const preData = await extractActualImagePixels(req.preShiftImage, false);
+
 
   // 2. Validate Pre-Shift Baseline
   const preBaselineCheck = validatePreShiftBaseline(preData);

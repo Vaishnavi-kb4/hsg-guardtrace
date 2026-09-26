@@ -1,5 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
+  ArrowLeft,
+  LayoutDashboard,
   Activity,
   Bell,
   Boxes,
@@ -8,6 +10,7 @@ import {
   ClipboardList,
   Cloud,
   CloudOff,
+  Clock,
   Gauge,
   Menu,
   Search,
@@ -38,6 +41,7 @@ import {
 import { useApp } from "@/context/AppContext";
 import { cn } from "@/lib/utils";
 import { AuthDialog } from "@/components/h2s/AuthDialog";
+import { RegisterWorkerWizard } from "@/components/h2s/RegisterWorkerWizard";
 import { translations, type SupportedLanguage } from "@/lib/translations";
 import { LocalQrCode } from "@/components/h2s/LocalQrCode";
 
@@ -46,6 +50,7 @@ const navConfig = [
   { to: "/measurements", key: "measurements" as const, icon: Activity },
   { to: "/workers", key: "workers" as const, icon: Users },
   { to: "/badges", key: "badges" as const, icon: Boxes },
+  { to: "/shifts", key: "shifts" as const, icon: Clock },
   { to: "/alerts", key: "alerts" as const, icon: ShieldAlert },
   { to: "/reports", key: "reports" as const, icon: ClipboardList },
   { to: "/assistant", key: "assistant" as const, icon: Sparkles },
@@ -172,16 +177,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="flex flex-wrap items-center gap-2">
               <LanguageSwitcher />
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowPhoneQr(true)}
-                className="gap-1.5 text-xs font-bold border-blue-400/40 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 hover:bg-blue-100"
-              >
-                <QrCode className="size-3.5 text-blue-600 dark:text-blue-400" />
-                <span className="hidden sm:inline">{t.scanQr}</span>
-              </Button>
-
               {currentUser ? (
                 <div className="flex items-center gap-3">
                   <div className="hidden text-right text-xs sm:block">
@@ -205,38 +200,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
         <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
-
-        {/* MOBILE PHONE QR CODE DIALOG */}
-        <Dialog open={showPhoneQr} onOpenChange={setShowPhoneQr}>
-          <DialogContent className="sm:max-w-md border border-slate-700 bg-slate-900 text-white p-6 rounded-3xl shadow-2xl text-center">
-            <DialogHeader>
-              <div className="mx-auto size-12 place-items-center grid rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-400/30 mb-2">
-                <Smartphone className="size-6" />
-              </div>
-              <DialogTitle className="text-xl font-black text-white text-center">Scan to Open Entire Project on Mobile</DialogTitle>
-              <DialogDescription className="text-xs text-slate-300 text-center mt-1">
-                Scan this QR Code with your <b>iPhone or Android Camera</b> (or Expo Go app) to open the full application on your phone!
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="my-4 flex flex-col items-center justify-center p-2">
-              <LocalQrCode value="https://self-patricia-booth-circular.trycloudflare.com" size={210} />
-              <span className="text-[11px] font-bold text-amber-300 font-mono mt-3 bg-slate-800 px-3 py-1 rounded-lg border border-slate-700">
-                https://self-patricia-booth-circular.trycloudflare.com
-              </span>
-            </div>
-
-            <div className="space-y-2 text-xs text-slate-300 bg-slate-800/80 p-3.5 rounded-xl border border-slate-700 text-left">
-              <p className="font-semibold text-blue-300 text-center">📱 Mobile Access Options:</p>
-              <p className="text-[11px]">1. <b>Zero-Gateway Cloudflare Tunnel:</b> Scan QR code above to open <code className="text-amber-300 font-mono">https://self-patricia-booth-circular.trycloudflare.com</code> in Safari / Chrome (Works on 4G/5G/Wi-Fi).</p>
-              <p className="text-[11px]">2. <b>Local Wi-Fi LAN:</b> <code className="text-blue-300 font-mono">http://192.168.0.158:8080</code></p>
-            </div>
-
-            <Button onClick={() => setShowPhoneQr(false)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold h-11 rounded-xl mt-3 text-xs uppercase tracking-wider">
-              Done / Close
-            </Button>
-          </DialogContent>
-        </Dialog>
       </div>
     );
   }
@@ -254,6 +217,35 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Menu />
           </Button>
 
+          {/* Quick Back & Dashboard Navigation Controls */}
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.history.back()}
+              className="h-8 text-xs font-bold gap-1"
+              title="Go Back to Previous Page"
+            >
+              <ArrowLeft className="size-3.5" />
+              <span className="hidden sm:inline">Back</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="h-8 text-xs font-bold gap-1"
+              title="Return to HSE Dashboard Overview"
+            >
+              <Link to="/">
+                <LayoutDashboard className="size-3.5 text-primary" />
+                <span className="hidden md:inline">Dashboard</span>
+              </Link>
+            </Button>
+          </div>
+
+          <div className="hidden h-6 w-px bg-border sm:block" />
+
           <LanguageSwitcher />
 
           <div className="hidden h-6 w-px bg-border md:block" />
@@ -266,7 +258,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="gap-2 font-bold text-xs bg-emerald-800 text-white hover:bg-emerald-700 border-none"
           >
             <ShieldAlert className="size-3.5" />
-            <span>HSE Officer: {currentUser.name}</span>
+            <span className="hidden sm:inline">HSE Officer: {currentUser.name}</span>
           </Button>
 
           <div className="relative ml-auto hidden max-w-xs flex-1 xl:block">

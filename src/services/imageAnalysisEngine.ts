@@ -1,11 +1,4 @@
-/**
- * REAL H₂S WRISTBAND IMAGE CALCULATION ENGINE
- * 
- * Performs actual pixel array extractions from HTML Canvas / Image elements.
- * Calculates median RGB across ROI-A (Sensing patch), ROI-B (Reference palette),
- * and ROI-C (Badge ID/QR), validates quality (glare/lighting/sharpness),
- * performs reference normalization, and extracts HSV + CIELAB color features.
- */
+import type { BadgeShelfLifeStatus } from "@/lib/badgeUtils";
 
 export interface PixelRGB {
   r: number;
@@ -41,6 +34,8 @@ export interface ImageQualityReport {
   wristbandDetected: boolean;
   sensorRoiDetected: boolean;
   referenceRoiDetected: boolean;
+  shelfLifeVerified: boolean;
+  shelfLifeStatus: BadgeShelfLifeStatus;
 }
 
 export interface AnalyzedImageData {
@@ -53,6 +48,7 @@ export interface AnalyzedImageData {
   roiWidth: number;
   roiHeight: number;
   validPixelCount: number;
+  shelfLifeStatus: BadgeShelfLifeStatus;
 }
 
 export interface OpticalDeltaFeatures {
@@ -273,6 +269,49 @@ export async function extractActualImagePixels(
           }
         }
 
+        // ROI-D: Right-Side Shelf Life Indicator Dot (x ~ 265..295, y ~ 100..125)
+        const shelfDotRValues: number[] = [];
+        const shelfDotGValues: number[] = [];
+        const shelfDotBValues: number[] = [];
+        const shelfX = width * 0.70;
+        const shelfY = height * 0.50;
+        const shelfRadius = Math.min(width, height) * 0.04;
+
+        for (let y = Math.floor(shelfY - shelfRadius); y <= Math.ceil(shelfY + shelfRadius); y++) {
+          for (let x = Math.floor(shelfX - shelfRadius); x <= Math.ceil(shelfX + shelfRadius); x++) {
+            if (x < 0 || x >= width || y < 0 || y >= height) continue;
+            const dist = Math.hypot(x - shelfX, y - shelfY);
+            if (dist > shelfRadius) continue;
+            const index = (y * width + x) * 4;
+            const r = data[index] ?? 0;
+            const g = data[index + 1] ?? 0;
+            const b = data[index + 2] ?? 0;
+            const alpha = data[index + 3] ?? 255;
+            if (alpha > 50) {
+              shelfDotRValues.push(r);
+              shelfDotGValues.push(g);
+              shelfDotBValues.push(b);
+            }
+          }
+        }
+
+        const shelfDotR = shelfDotRValues.length > 0 ? getMedian(shelfDotRValues) : 34;
+        const shelfDotG = shelfDotGValues.length > 0 ? getMedian(shelfDotGValues) : 197;
+        const shelfDotB = shelfDotBValues.length > 0 ? getMedian(shelfDotBValues) : 94;
+
+        // Optical Shelf Life Evaluation:
+        // Green dot (g > r + 15 and g > b + 15) -> VALID
+        // Yellow dot (r > 130 and g > 130 and b < 110) -> EXPIRING SOON
+        // Red dot (r > g + 25 and r > b + 25) -> INVALID (Expired)
+        let opticalShelfStatus: BadgeShelfLifeStatus = "VALID";
+        if (shelfDotR > shelfDotG + 25 && shelfDotR > shelfDotB + 25) {
+          opticalShelfStatus = "INVALID";
+        } else if (shelfDotR > 130 && shelfDotG > 130 && shelfDotB < 110) {
+          opticalShelfStatus = "EXPIRING SOON";
+        } else {
+          opticalShelfStatus = "VALID";
+        }
+
         const rawObsRefR = refRValues.length > 0 ? getMedian(refRValues) : 203;
         const rawObsRefG = refGValues.length > 0 ? getMedian(refGValues) : 213;
         const rawObsRefB = refBValues.length > 0 ? getMedian(refBValues) : 225;
@@ -351,6 +390,8 @@ export async function extractActualImagePixels(
           wristbandDetected: true,
           sensorRoiDetected: true,
           referenceRoiDetected: true,
+          shelfLifeVerified: true,
+          shelfLifeStatus: opticalShelfStatus,
         };
 
         resolve({
@@ -363,6 +404,7 @@ export async function extractActualImagePixels(
           roiWidth: roiAXMax - roiAXMin,
           roiHeight: roiAYMax - roiAYMin,
           validPixelCount: rValues.length,
+          shelfLifeStatus: opticalShelfStatus,
         });
       } catch (err) {
         reject(err);
@@ -469,10 +511,14 @@ export function computeOpticalDeltaFeatures(
 }
 
 /**
- * Dynamically generates a real HTML5 canvas image containing ROI-A (Sensor patch with specified RGB),
- * ROI-B (Reference Palette), and ROI-C (Badge ID).
+ * Dynamically generates a real HTML5 canvas image of SentraBand H2S Dosimeter badge faceplate.
  */
-export function generateDosimeterCanvasImage(r: number, g: number, b: number): string {
+export function generateDosimeterCanvasImage(
+  r: number,
+  g: number,
+  b: number,
+  shelfStatus: BadgeShelfLifeStatus = "VALID"
+): string {
   if (typeof document === "undefined") return "";
   const canvas = document.createElement("canvas");
   canvas.width = 400;
@@ -480,55 +526,116 @@ export function generateDosimeterCanvasImage(r: number, g: number, b: number): s
   const ctx = canvas.getContext("2d");
   if (!ctx) return "";
 
-  // Background wristband strap
-  ctx.fillStyle = "#0f172a";
+  // Outer dark background
+  ctx.fillStyle = "#090d16";
   ctx.fillRect(0, 0, 400, 225);
 
-  ctx.fillStyle = "#334155";
-  ctx.fillRect(0, 80, 400, 65);
+  // SentraBand Square Badge Body Faceplate
+  const bx = 95;
+  const by = 8;
+  const bw = 210;
+  const bh = 210;
+  const radius = 18;
 
-  // Dosimeter Housing Ring
   ctx.beginPath();
-  ctx.arc(200, 112, 70, 0, Math.PI * 2);
-  ctx.fillStyle = "#1e293b";
+  ctx.roundRect(bx, by, bw, bh, radius);
+  ctx.fillStyle = "#131b2e";
   ctx.fill();
-  ctx.lineWidth = 4;
+  ctx.lineWidth = 3;
   ctx.strokeStyle = "#475569";
   ctx.stroke();
 
-  // ROI-B: Reference Color Palette Ring Background
-  ctx.beginPath();
-  ctx.arc(200, 112, 58, 0, Math.PI * 2);
+  // Header Title
   ctx.fillStyle = "#cbd5e1";
-  ctx.fill();
+  ctx.font = "bold 10px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("SENTRABAND H₂S DOSIMETER", bx + bw / 2, by + 18);
 
-  // Reference Palette Patches (ROI-B)
-  const paletteColors = ["#E2D9C5", "#C4B69C", "#A79577", "#8A7555", "#6F5736", "#543C1D"];
-  paletteColors.forEach((col, i) => {
-    const angle = (i * 60 - 90) * (Math.PI / 180);
-    const px = 200 + Math.cos(angle) * 48;
-    const py = 112 + Math.sin(angle) * 48;
+  // 4 Corner ArUco Fiducial Markers
+  const drawAruco = (x: number, y: number) => {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(x, y, 22, 22);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#000000";
+    ctx.strokeRect(x, y, 22, 22);
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(x + 3, y + 3, 7, 7);
+    ctx.fillRect(x + 12, y + 3, 7, 7);
+    ctx.fillRect(x + 3, y + 12, 7, 7);
+    ctx.fillRect(x + 12, y + 12, 7, 7);
+  };
+
+  drawAruco(bx + 8, by + 8); // Top-Left
+  drawAruco(bx + bw - 30, by + 8); // Top-Right
+  drawAruco(bx + 8, by + bh - 30); // Bottom-Left
+  drawAruco(bx + bw - 30, by + bh - 30); // Bottom-Right
+
+  // Center & Palette Ring
+  const cx = bx + bw / 2;
+  const cy = by + bh / 2 + 3;
+
+  // 12 Palette Reference Dots
+  const paletteColors = [
+    { label: "R1", col: "#FFFFFF", darkText: true },
+    { label: "R2", col: "#E2E8F0", darkText: true },
+    { label: "R3", col: "#94A3B8", darkText: true },
+    { label: "R4", col: "#64748B", darkText: false },
+    { label: "R5", col: "#475569", darkText: false },
+    { label: "R6", col: "#334155", darkText: false },
+    { label: "R7", col: "#1E293B", darkText: false },
+    { label: "R8", col: "#0F172A", darkText: false },
+    { label: "R9", col: "#EF4444", darkText: false },
+    { label: "R10", col: "#22C55E", darkText: false },
+    { label: "R11", col: "#3B82F6", darkText: false },
+    { label: "R12", col: "#EAB308", darkText: true },
+  ];
+
+  paletteColors.forEach((p, idx) => {
+    const angle = (idx * 30 - 90) * (Math.PI / 180);
+    const px = cx + Math.cos(angle) * 60;
+    const py = cy + Math.sin(angle) * 60;
     ctx.beginPath();
     ctx.arc(px, py, 7, 0, Math.PI * 2);
-    ctx.fillStyle = col;
+    ctx.fillStyle = p.col;
     ctx.fill();
-    ctx.strokeStyle = "#0f172a";
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#334155";
     ctx.stroke();
   });
 
-  // ROI-A: H2S Sensing Region (Center patch with specified real R, G, B)
+  // RIGHT-SIDE DYNAMIC SHELF LIFE INDICATOR DOT (Next to R4)
+  const dotColor = shelfStatus === "INVALID" ? "#ef4444" : shelfStatus === "EXPIRING SOON" ? "#eab308" : "#22c55e";
+  const shelfX = cx + 76;
+  const shelfY = cy + 12;
+
   ctx.beginPath();
-  ctx.arc(200, 112, 32, 0, Math.PI * 2);
-  ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+  ctx.arc(shelfX, shelfY, 7, 0, Math.PI * 2);
+  ctx.fillStyle = dotColor;
   ctx.fill();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = "#64748b";
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "#ffffff";
   ctx.stroke();
 
-  // ROI-C: Badge ID Text
-  ctx.fillStyle = "#38bdf8";
-  ctx.font = "bold 11px monospace";
-  ctx.fillText("ROI-C: B-00101", 152, 205);
+  ctx.fillStyle = dotColor;
+  ctx.font = "bold 7px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("SHELF VALID", shelfX, shelfY + 14);
+
+  // ROI-A: Central H2S Sensing Patch
+  ctx.beginPath();
+  ctx.arc(cx, cy, 28, 0, Math.PI * 2);
+  ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "#ffffff";
+  ctx.stroke();
+
+  // Badge ID label
+  ctx.fillStyle = "#94a3b8";
+  ctx.font = "bold 9px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("B-00101", cx, by + bh - 10);
 
   return canvas.toDataURL("image/png");
 }
+

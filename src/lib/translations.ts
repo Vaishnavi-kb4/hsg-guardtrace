@@ -7,6 +7,7 @@ export interface Translations {
   measurements: string;
   workers: string;
   badges: string;
+  shifts: string;
   alerts: string;
   reports: string;
   assistant: string;
@@ -68,7 +69,8 @@ export const translations: Record<SupportedLanguage, Translations> = {
     measurements: "Measurements",
     workers: "Workers",
     badges: "Badges",
-    alerts: "Alerts & Review",
+    shifts: "Shifts",
+    alerts: "Exposure Review Queue",
     reports: "Reports",
     assistant: "HSE Assistant",
     settings: "Settings",
@@ -127,6 +129,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
     measurements: "அளவீடுகள்",
     workers: "பணியாளர்கள்",
     badges: "பேட்ஜ்கள்",
+    shifts: "ஷிப்டுகள்",
     alerts: "எச்சரிக்கைகள் & மதிப்பாய்வு",
     reports: "அறிக்கைகள்",
     assistant: "பாதுகாப்பு உதவி",
@@ -186,6 +189,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
     measurements: "माप (अभिलेख)",
     workers: "कर्मचारी",
     badges: "बैज (Dosimeters)",
+    shifts: "शिफ्ट",
     alerts: "चेतावनी और समीक्षा",
     reports: "रिपोर्ट्स",
     assistant: "सुरक्षा सहायक (AI)",
@@ -245,6 +249,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
     measurements: "ಅಳತೆಗಳು",
     workers: "ಕೆಲಸಗಾರರು",
     badges: "ಬ್ಯಾಡ್ಜ್‌ಗಳು",
+    shifts: "ಶಿಫ್ಟ್‌ಗಳು",
     alerts: "ಎಚ್ಚರಿಕೆಗಳು ಮತ್ತು ವಿಮರ್ಶೆ",
     reports: "ವರದಿಗಳು",
     assistant: "ಸುರಕ್ಷತಾ ಸಹಾಯಕ",
@@ -304,6 +309,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
     measurements: "അളവുകൾ",
     workers: "തൊഴിലാളികൾ",
     badges: "ബാഡ്ജുകൾ",
+    shifts: "ഷിഫ്റ്റുകൾ",
     alerts: "മുന്നറിയിപ്പുകളും അവലോകനവും",
     reports: "റിപ്പോർട്ടുകൾ",
     assistant: "സുരക്ഷാ സഹായി (AI)",

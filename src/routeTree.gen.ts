@@ -18,6 +18,7 @@ import { Route as CaptureRouteImport } from './routes/capture'
 import { Route as MeasurementsRouteImport } from './routes/measurements'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ShiftsRouteImport } from './routes/shifts'
 import { Route as WorkersRouteImport } from './routes/workers'
 
 const IndexRoute = IndexRouteImport.update({
@@ -65,6 +66,11 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShiftsRoute = ShiftsRouteImport.update({
+  id: '/shifts',
+  path: '/shifts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WorkersRoute = WorkersRouteImport.update({
   id: '/workers',
   path: '/workers',
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/measurements': typeof MeasurementsRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
+  '/shifts': typeof ShiftsRoute
   '/workers': typeof WorkersRoute
 }
 export interface FileRoutesByTo {
@@ -93,6 +100,7 @@ export interface FileRoutesByTo {
   '/measurements': typeof MeasurementsRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
+  '/shifts': typeof ShiftsRoute
   '/workers': typeof WorkersRoute
 }
 export interface FileRoutesById {
@@ -106,6 +114,7 @@ export interface FileRoutesById {
   '/measurements': typeof MeasurementsRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
+  '/shifts': typeof ShiftsRoute
   '/workers': typeof WorkersRoute
 }
 export interface FileRouteTypes {
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
     | '/measurements'
     | '/reports'
     | '/settings'
+    | '/shifts'
     | '/workers'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -132,6 +142,7 @@ export interface FileRouteTypes {
     | '/measurements'
     | '/reports'
     | '/settings'
+    | '/shifts'
     | '/workers'
   id:
     | '__root__'
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/measurements'
     | '/reports'
     | '/settings'
+    | '/shifts'
     | '/workers'
   fileRoutesById: FileRoutesById
 }
@@ -157,6 +169,7 @@ export interface RootRouteChildren {
   MeasurementsRoute: typeof MeasurementsRoute
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
+  ShiftsRoute: typeof ShiftsRoute
   WorkersRoute: typeof WorkersRoute
 }
 
@@ -225,6 +238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shifts': {
+      id: '/shifts'
+      path: '/shifts'
+      fullPath: '/shifts'
+      preLoaderRoute: typeof ShiftsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/workers': {
       id: '/workers'
       path: '/workers'
@@ -245,6 +265,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeasurementsRoute: MeasurementsRoute,
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,
+  ShiftsRoute: ShiftsRoute,
   WorkersRoute: WorkersRoute,
 }
 export const routeTree = rootRouteImport

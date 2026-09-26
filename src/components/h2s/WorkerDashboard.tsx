@@ -563,64 +563,51 @@ export function WorkerDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner for Worker */}
-      <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 p-4 sm:p-6 text-white shadow-xl overflow-hidden">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <span className="grid size-11 sm:size-14 shrink-0 place-items-center rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-400/30">
+      {/* Top Banner for Worker: My Shift */}
+      <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 p-5 sm:p-6 text-white shadow-xl overflow-hidden">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+          <div className="flex items-center gap-4">
+            <span className="grid size-12 sm:size-14 shrink-0 place-items-center rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-400/30">
               <HardHat className="size-6 sm:size-8" />
             </span>
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[10px] sm:text-xs font-extrabold uppercase text-blue-300 tracking-wider">
-                  Worker Personal Interface
+                  My Shift
                 </span>
                 <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-emerald-300">
-                  ✓ Active Shift
+                  ✓ Assigned
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-black text-white mt-0.5 sm:mt-1">{workerName}</h1>
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-slate-300 font-mono mt-1">
-                <span>ID: {workerId}</span>
-                <span>•</span>
-                <span>{shift}</span>
-                <span>•</span>
-                <span>Badge: {badgeId}</span>
-              </div>
+              <h1 className="text-xl sm:text-2xl font-black text-white mt-0.5">Good Morning, {workerName.split(" ")[0]}</h1>
+              <p className="text-xs text-slate-300">Assigned shift dosimeter active & ready for pre-shift scan.</p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button onClick={() => setShowQrModal(true)} size="sm" className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-md gap-1.5 border-none">
-              <QrCode className="size-4" /> Scan QR
-            </Button>
-            <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-3 text-center min-w-36">
-              <span className="block text-[10px] font-bold uppercase text-slate-400">Badge Shelf Life Status</span>
-              <span className={`text-xs font-extrabold flex items-center justify-center gap-1 mt-0.5 ${workerBadgeShelfLife === "VALID"
-                ? "text-emerald-400"
-                : workerBadgeShelfLife === "EXPIRING SOON"
-                  ? "text-amber-400"
-                  : "text-red-400 font-black animate-pulse"
-                }`}>
-                {workerBadgeShelfLife === "VALID" ? (
-                  <>✓ VALID</>
-                ) : workerBadgeShelfLife === "EXPIRING SOON" ? (
-                  <>⚠️ EXPIRING SOON</>
-                ) : (
-                  <>❌ INVALID / EXPIRED</>
-                )}
-              </span>
+          {/* Today's Assignment Card */}
+          <div className="w-full md:w-auto rounded-2xl border border-white/15 bg-slate-900/90 p-4 shadow-lg">
+            <div className="text-[10px] font-mono font-extrabold uppercase text-blue-300 tracking-wider mb-2">
+              📋 Today's Assignment
             </div>
-
-            <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-3 text-center min-w-32">
-              <span className="block text-[10px] font-bold uppercase text-slate-400">Pre-Shift Base Color</span>
-              <span className={`text-xs font-extrabold ${preShiftRecorded ? "text-emerald-400" : "text-amber-400"}`}>
-                {preShiftRecorded ? `✓ Saved (${preShiftTime})` : "Pending Record"}
-              </span>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-3 text-center min-w-32">
-              <span className="block text-[10px] font-bold uppercase text-slate-400">Latest Exposure</span>
-              <span className="text-sm font-black font-mono text-blue-300">{latestExposure}</span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div>
+                <span className="text-slate-400 block text-[10px]">Worker ID</span>
+                <span className="font-mono font-bold text-white">{workerId}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block text-[10px]">Assigned Badge</span>
+                <span className="font-mono font-bold text-blue-300">{badgeId}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block text-[10px]">Shift</span>
+                <span className="font-semibold text-white">{shift.includes("(") ? shift.split("(")[1]?.replace(")", "") : shift}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block text-[10px]">Badge Shelf-Life</span>
+                <span className={`font-extrabold ${workerBadgeShelfLife === "VALID" ? "text-emerald-400" : "text-amber-400"}`}>
+                  {workerBadgeShelfLife === "VALID" ? "✅ Valid" : "⚠️ Check Expiry"}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -735,7 +722,7 @@ export function WorkerDashboard() {
                   className="w-full bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 text-white font-bold text-sm h-12 rounded-xl shadow-lg shadow-blue-950/20 gap-2 transition-all active:scale-[0.99]"
                 >
                   <Sun className="size-4 text-amber-400" />
-                  {preShiftRecorded ? "Recapture Pre-Shift Scan" : "Start Pre-Shift Scan"}
+                  {preShiftRecorded ? "Recapture Pre-Shift Scan" : "START PRE-SHIFT CHECK"}
                 </Button>
               </div>
 
@@ -997,37 +984,66 @@ export function WorkerDashboard() {
               {/* STAGE 3: BADGE & SHELF-LIFE VALIDATION */}
               {stage === "badge" && (
                 <div className="mx-auto grid max-w-4xl gap-5 lg:grid-cols-2">
-                  <Panel className="overflow-hidden">
-                    <div className="bg-slate-900 p-5 text-white">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="text-[10px] font-bold uppercase text-blue-400">Dosimeter Badge Identity (ROI-C)</div>
-                          <div className="mt-1 font-mono text-2xl font-bold">{badgeId}</div>
-                        </div>
-                        <BadgeCheck className="size-9 text-emerald-400" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 p-5 text-xs">
-                      <div><span className="text-muted-foreground block text-[10px] uppercase font-bold">Batch Lot</span><b className="font-mono">{batchId}</b></div>
-                      <div><span className="text-muted-foreground block text-[10px] uppercase font-bold">Manufactured</span><b>12 Jan 2026</b></div>
-                      <div><span className="text-muted-foreground block text-[10px] uppercase font-bold">Expiration</span><b>{expired ? "03 Mar 2026" : "12 Jan 2027"}</b></div>
-                      <div><span className="text-muted-foreground block text-[10px] uppercase font-bold">Calibration Standard</span><b>CAL-03 Model</b></div>
-                    </div>
+                  <Panel className="p-4 flex flex-col items-center justify-center bg-slate-950/80">
+                    <WristbandDosimeter
+                      badgeId={badgeId}
+                      batchId={batchId}
+                      expiryStr={workerBadge?.expiry || "12 Jan 2027"}
+                      shelfLifeStatus={workerBadgeShelfLife}
+                      exposure={exposureResult.cumulativeDosePpmH}
+                    />
                   </Panel>
 
                   <Panel className="p-5 space-y-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-bold text-sm">Badge Shelf-Life Check</h3>
-                      <StatusBadge status={expired ? "EXPIRED" : "VALID"} />
+                      <div>
+                        <h3 className="font-bold text-sm">Badge Shelf-Life Optical Check</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">Right-side indicator dot optical analysis</p>
+                      </div>
+                      <StatusBadge status={workerBadgeShelfLife} />
+                    </div>
+
+                    {/* Shelf Life Status Box */}
+                    <div className={`p-4 rounded-xl border text-xs space-y-2 ${
+                      workerBadgeShelfLife === "VALID"
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-900 dark:text-emerald-200"
+                        : workerBadgeShelfLife === "EXPIRING SOON"
+                        ? "bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200"
+                        : "bg-red-500/10 border-red-500/30 text-red-900 dark:text-red-200"
+                    }`}>
+                      <div className="flex items-center gap-2 font-extrabold text-sm">
+                        <span className={`size-3 rounded-full ${
+                          workerBadgeShelfLife === "VALID" ? "bg-emerald-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]" : workerBadgeShelfLife === "EXPIRING SOON" ? "bg-amber-500 shadow-[0_0_8px_rgba(234,179,8,0.8)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"
+                        }`} />
+                        <span>
+                          {workerBadgeShelfLife === "VALID"
+                            ? "🟢 Green Dot — Badge Shelf Life Valid"
+                            : workerBadgeShelfLife === "EXPIRING SOON"
+                            ? "🟡 Yellow Dot — Badge Expiring Soon (< 30 Days)"
+                            : "🔴 Red Dot — Badge Shelf Life EXPIRED & Invalid"}
+                        </span>
+                      </div>
+                      <p className="leading-relaxed">
+                        {workerBadgeShelfLife === "VALID"
+                          ? "The right-side indicator dot on the dosimeter faceplate was optically verified as GREEN (Valid). Shelf life is active (> 30 days remaining)."
+                          : workerBadgeShelfLife === "EXPIRING SOON"
+                          ? "The right-side indicator dot on the dosimeter faceplate was optically verified as YELLOW (Expiring Soon). Contact HSE Officer to order replacement."
+                          : "The right-side indicator dot on the dosimeter faceplate was optically verified as RED (Expired). Badge cannot be used for hazardous entry."}
+                      </p>
                     </div>
 
                     <div className="space-y-2 text-xs font-semibold">
-                      {["Badge recognized (ROI-C)", "Batch lot verified", "Within shelf-life validity", "Calibration curve available"].map((x, i) => (
-                        <div className="flex items-center gap-2.5" key={x}>
-                          <span className={`grid size-5 place-items-center rounded-full ${expired && i === 2 ? "bg-red-100 text-red-600" : "bg-emerald-100 text-emerald-600"}`}>
-                            {expired && i === 2 ? <X className="size-3" /> : <Check className="size-3" />}
+                      {[
+                        { text: "Badge identity recognized (ROI-C)", pass: true },
+                        { text: `Batch lot verified (${batchId})`, pass: true },
+                        { text: `Optical Right Dot: ${workerBadgeShelfLife}`, pass: workerBadgeShelfLife !== "INVALID" },
+                        { text: "Calibration curve available (CAL-03)", pass: true },
+                      ].map((item) => (
+                        <div className="flex items-center gap-2.5" key={item.text}>
+                          <span className={`grid size-5 place-items-center rounded-full ${item.pass ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-300" : "bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-300"}`}>
+                            {item.pass ? <Check className="size-3" /> : <X className="size-3" />}
                           </span>
-                          {x}
+                          <span>{item.text}</span>
                         </div>
                       ))}
                     </div>
@@ -1684,38 +1700,6 @@ export function WorkerDashboard() {
 
           <Button onClick={() => setShowHighAlertModal(false)} className="w-full bg-red-600 hover:bg-red-500 text-white font-bold h-11 text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-red-600/40 mt-2">
             I Acknowledge Emergency High Exposure Alert
-          </Button>
-        </DialogContent>
-      </Dialog>
-
-      {/* MOBILE QR CODE MODAL DIALOG */}
-      <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
-        <DialogContent className="sm:max-w-md border border-slate-700 bg-slate-900 text-white p-6 rounded-3xl shadow-2xl text-center">
-          <DialogHeader>
-            <div className="mx-auto size-12 place-items-center grid rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-400/30 mb-2">
-              <Smartphone className="size-6" />
-            </div>
-            <DialogTitle className="text-xl font-black text-white text-center">Scan to Open Entire Project on Mobile</DialogTitle>
-            <DialogDescription className="text-xs text-slate-300 text-center mt-1">
-              Scan this QR Code with your <b>iPhone or Android Camera</b> (or Expo Go app) to open the full application on your phone!
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="my-4 flex flex-col items-center justify-center p-2">
-            <LocalQrCode value="https://self-patricia-booth-circular.trycloudflare.com" size={210} />
-            <span className="text-[11px] font-bold text-amber-300 font-mono mt-3 bg-slate-800 px-3 py-1 rounded-lg border border-slate-700">
-              https://self-patricia-booth-circular.trycloudflare.com
-            </span>
-          </div>
-
-          <div className="space-y-2 text-xs text-slate-300 bg-slate-800/80 p-3.5 rounded-xl border border-slate-700">
-            <p className="font-semibold text-blue-300">📱 Mobile Access Options:</p>
-            <p className="text-[11px]">1. <b>Zero-Gateway Cloudflare Tunnel:</b> Scan QR code above to open <code className="text-amber-300 font-mono">https://self-patricia-booth-circular.trycloudflare.com</code> in Safari / Chrome (Works on 4G/5G/Wi-Fi).</p>
-            <p className="text-[11px]">2. <b>Local Wi-Fi LAN:</b> <code className="text-blue-300 font-mono">http://192.168.0.158:8080</code></p>
-          </div>
-
-          <Button onClick={() => setShowQrModal(false)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold h-11 rounded-xl mt-3 text-xs uppercase tracking-wider">
-            Done / Close
           </Button>
         </DialogContent>
       </Dialog>

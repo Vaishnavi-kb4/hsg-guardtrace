@@ -78,18 +78,16 @@ export function MeasurementDrawer({
 
         {/* Hazard Level Banner */}
         <div
-          className={`mt-4 rounded-2xl p-4 border-2 flex items-center gap-3 ${
-            isHighExposure
+          className={`mt-4 rounded-2xl p-4 border-2 flex items-center gap-3 ${isHighExposure
               ? "border-red-600 bg-red-500/15 text-red-900 dark:text-red-200"
               : isModerateExposure
-              ? "border-amber-500 bg-amber-500/15 text-amber-900 dark:text-amber-200"
-              : "border-emerald-500 bg-emerald-500/15 text-emerald-900 dark:text-emerald-200"
-          }`}
+                ? "border-amber-500 bg-amber-500/15 text-amber-900 dark:text-amber-200"
+                : "border-emerald-500 bg-emerald-500/15 text-emerald-900 dark:text-emerald-200"
+            }`}
         >
           <span
-            className={`grid size-9 place-items-center rounded-xl text-white font-bold shrink-0 ${
-              isHighExposure ? "bg-red-600 animate-pulse" : isModerateExposure ? "bg-amber-500" : "bg-emerald-600"
-            }`}
+            className={`grid size-9 place-items-center rounded-xl text-white font-bold shrink-0 ${isHighExposure ? "bg-red-600 animate-pulse" : isModerateExposure ? "bg-amber-500" : "bg-emerald-600"
+              }`}
           >
             {isHighExposure ? <ShieldAlert className="size-5" /> : <Check className="size-5" />}
           </span>
@@ -98,8 +96,8 @@ export function MeasurementDrawer({
               {isHighExposure
                 ? "🚨 HIGH H₂S EXPOSURE HAZARD DETECTED"
                 : isModerateExposure
-                ? "⚠ MODERATE H₂S EXPOSURE NOTICE"
-                : "✓ LOW / SAFE WORKPLACE EXPOSURE"}
+                  ? "⚠ MODERATE H₂S EXPOSURE NOTICE"
+                  : "✓ LOW / SAFE WORKPLACE EXPOSURE"}
             </div>
             <div className="text-[11px] opacity-90 mt-0.5">
               Shift TWA: <b>{twaVal.toFixed(2)} ppm TWA</b> (Cumulative Dose: <b>{doseVal.toFixed(1)} ppm·h</b> over 8.0h shift).

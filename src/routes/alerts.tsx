@@ -66,17 +66,15 @@ function AlertsPage() {
             return (
               <Panel
                 key={a.id}
-                className={`p-5 transition-all ${
-                  isHighAlert
+                className={`p-5 transition-all ${isHighAlert
                     ? "border-2 border-red-500/50 bg-red-500/5 dark:bg-red-950/20 shadow-md shadow-red-500/10"
                     : ""
-                }`}
+                  }`}
               >
                 <div className="flex items-start gap-4">
                   <span
-                    className={`grid size-11 place-items-center rounded-xl font-bold shrink-0 text-white ${
-                      isHighAlert ? "bg-red-600 animate-pulse" : "bg-amber-500"
-                    }`}
+                    className={`grid size-11 place-items-center rounded-xl font-bold shrink-0 text-white ${isHighAlert ? "bg-red-600 animate-pulse" : "bg-amber-500"
+                      }`}
                   >
                     {isHighAlert ? <Siren className="size-6" /> : <AlertTriangle className="size-5" />}
                   </span>

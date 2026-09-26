@@ -24,9 +24,11 @@ import { exportOccupationalHealthCSV, exportOccupationalHealthPDF } from "@/lib/
 import { translations } from "@/lib/translations";
 
 import { evaluateBadgeShelfLife } from "@/lib/badgeUtils";
+import { RegisterWorkerWizard } from "@/components/h2s/RegisterWorkerWizard";
 
 export function SafetyMonitorDashboard() {
   const { workers, measurements, badges, alerts, registeredUsers, loadSampleData, clearAllData, language } = useApp();
+  const [regWizardOpen, setRegWizardOpen] = React.useState(false);
   const t = translations[language] || translations.English;
 
   // Dynamic metrics calculations (0 if empty)
@@ -66,6 +68,15 @@ export function SafetyMonitorDashboard() {
 
         {/* Data Reset / Seed controls */}
         <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={() => setRegWizardOpen(true)}
+            className="gap-1.5 font-bold text-xs bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl shadow-xs"
+          >
+            <HardHat className="size-4" />
+            <span>+ Register New Worker</span>
+          </Button>
+
           {totalRecords === 0 && activeWorkersCount === 0 ? (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span className="inline-flex size-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -81,6 +92,7 @@ export function SafetyMonitorDashboard() {
           )}
         </div>
       </div>
+      <RegisterWorkerWizard open={regWizardOpen} onOpenChange={setRegWizardOpen} />
 
       {/* Structured Record Export Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
@@ -268,40 +280,40 @@ export function SafetyMonitorDashboard() {
               <tbody className="divide-y divide-border">
                 {(registeredUsers.length > 0
                   ? registeredUsers.map((u) => {
-                      const userMeas = measurements.filter((m) => m.workerId === u.id);
-                      const latest = userMeas.length > 0 ? userMeas[0] : null;
-                      const badgeObj = allBadgeList.find((b) => b.id === u.badgeId);
-                      const shelfLife = evaluateBadgeShelfLife(badgeObj?.expiry);
+                    const userMeas = measurements.filter((m) => m.workerId === u.id);
+                    const latest = userMeas.length > 0 ? userMeas[0] : null;
+                    const badgeObj = allBadgeList.find((b) => b.id === u.badgeId);
+                    const shelfLife = evaluateBadgeShelfLife(badgeObj?.expiry);
 
-                      return {
-                        id: u.id,
-                        name: u.name,
-                        shift: u.shift,
-                        badgeId: u.badgeId,
-                        batchId: u.batchId,
-                        latestExposure: latest?.exposure ?? 0,
-                        shelfLife,
-                        status: u.role === "worker" ? "Active" : "Monitor",
-                      };
-                    })
+                    return {
+                      id: u.id,
+                      name: u.name,
+                      shift: u.shift,
+                      badgeId: u.badgeId,
+                      batchId: u.batchId,
+                      latestExposure: latest?.exposure ?? 0,
+                      shelfLife,
+                      status: u.role === "worker" ? "Active" : "Monitor",
+                    };
+                  })
                   : workers.map((w) => {
-                      const badgeObj = allBadgeList.find((b) => b.id === w.badgeId);
-                      const shelfLife = evaluateBadgeShelfLife(badgeObj?.expiry);
-                      return {
-                        ...w,
-                        shelfLife,
-                      };
-                    })
+                    const badgeObj = allBadgeList.find((b) => b.id === w.badgeId);
+                    const shelfLife = evaluateBadgeShelfLife(badgeObj?.expiry);
+                    return {
+                      ...w,
+                      shelfLife,
+                    };
+                  })
                 ).map((w: any) => {
                   const expVal = w.latestExposure ?? 0;
                   const statusToDisplay =
                     expVal > 20.0
                       ? "HIGH"
                       : expVal >= 8.0
-                      ? "MODERATE"
-                      : expVal > 0
-                      ? "VALID"
-                      : "ACTIVE";
+                        ? "MODERATE"
+                        : expVal > 0
+                          ? "VALID"
+                          : "ACTIVE";
 
                   return (
                     <tr key={w.id} className="hover:bg-muted/50">
